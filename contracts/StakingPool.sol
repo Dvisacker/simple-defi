@@ -8,16 +8,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
-contract Staking is ReentrancyGuard {
+contract StakingPool is ReentrancyGuard {
     IERC20 public stakingToken;
     IERC20 public rewardToken;
 
     uint256 public constant REWARD_PER_BLOCK = 100;
 
     uint256 private totalSupply;
-    mapping(address => uint256) private stakedBalance;
-    mapping(address => uint256) private rewards;
-    mapping(address => uint256) private virtualRewardDebtPerToken;
+    mapping(address => uint256) public stakedBalance;
+    mapping(address => uint256) public rewards;
+    mapping(address => uint256) public virtualRewardDebtPerToken;
 
     uint256 private accumulatedRewardPerToken;
     uint256 private lastRewardUpdateBlock;
@@ -59,14 +59,14 @@ contract Staking is ReentrancyGuard {
             + rewards[user];
     }
 
-    function stake(uint256 amount) external nonReentrant {
+    function stake(uint256 amount) external updateReward(msg.sender) nonReentrant moreThanZero(amount) {
         require(amount > 0, "Cannot stake 0");
         totalSupply += amount;
         stakedBalance[msg.sender] += amount;
         stakingToken.transferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(uint256 amount) external nonReentrant {
+    function withdraw(uint256 amount) external updateReward(msg.sender) nonReentrant moreThanZero(amount) {
         require(amount > 0, "Cannot withdraw 0");
         totalSupply -= amount;
         stakedBalance[msg.sender] -= amount;
